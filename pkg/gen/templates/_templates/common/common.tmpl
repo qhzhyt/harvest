@@ -1,0 +1,17 @@
+{{- define "imports" -}}
+import(
+{{- range .ImportList}}
+    {{.Alias}} "{{.Package}}"
+{{- end}}
+)
+{{- end -}}
+
+{{- define "target" -}}
+  annotation.Target {
+    Module:   "{{.Module}}",
+    Package:  "{{.Package}}",
+    Type:     "{{.Type}}",
+    Name:     "{{.Name}}",
+    FuncRecv: "{{.FuncRecv}}",
+  }
+{{- end -}}

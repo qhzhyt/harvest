@@ -1,0 +1,21 @@
+{{- define "variables.go" -}}
+package harvest
+
+import(
+    {{- range .ImportList}}
+        {{.Alias}} "{{.Package}}"
+    {{- end}}
+)
+
+var(
+    {{- range .InstanceList}}
+        {{.InstanceName}} = {{.PackageAlias}}.{{.TypeName}}{}
+    {{- end}}
+)
+
+var(
+    {{- range .InstanceList}}
+        {{.InstancePtrName}} = &{{.InstanceName}}
+    {{- end}}
+)
+{{end}}
