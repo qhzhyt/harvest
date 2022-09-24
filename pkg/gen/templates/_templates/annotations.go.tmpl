@@ -1,0 +1,20 @@
+{{- define "annotations.go" -}}
+package harvest
+
+import "github.com/qhzhyt/harvest/pkg/annotation"
+
+var Annotations = []*annotation.Annotation {
+{{- range .Annotations }}
+    {
+        Name:       "{{.Name}}",
+        Args:       map[string]string {
+        {{- range $k, $v := .Args }}
+            "{{$k}}": "{{$v}}",
+        {{ end }}},
+        Package:    "{{.Package}}",
+        File:       "{{.File}}",
+{{ include "target" .Target | indent 8 }}
+    },
+{{- end }}
+}
+{{end}}

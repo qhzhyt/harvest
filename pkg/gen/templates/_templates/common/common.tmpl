@@ -7,11 +7,11 @@ import(
 {{- end -}}
 
 {{- define "target" -}}
-  annotation.Target {
-    Module:   "{{.Module}}",
-    Package:  "{{.Package}}",
-    Type:     "{{.Type}}",
-    Name:     "{{.Name}}",
-    FuncRecv: "{{.FuncRecv}}",
-  }
+Target:     annotation.Target {
+    Module:   "simple",
+    Package:  "components",
+    Type:     "struct",
+    Name:     "Collection",
+    FuncRecv: "",
+},
 {{- end -}}

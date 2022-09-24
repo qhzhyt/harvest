@@ -1,0 +1,31 @@
+{{- define "instances.go" -}}
+package harvest
+
+{{ template "imports" . }}
+
+import(
+    "github.com/qhzhyt/harvest/pkg/annotation"
+    "github.com/qhzhyt/harvest/pkg/harvest/types"
+)
+
+var(
+{{- range .InstanceList}}
+    {{.InstanceName}} = {{.PackageAlias}}.{{.TypeName}}{}
+{{- end}}
+)
+
+var(
+{{- range .InstanceList}}
+    {{.InstancePtrName}} = &{{.InstanceName}}
+{{- end}}
+)
+
+var Components = []*types.Component {
+{{- range .ComponentList }}
+    {
+{{ include "target" .Target | indent 8 }}
+        Instance:   {{.InstanceName}},
+    },
+{{- end}}
+}
+{{end}}

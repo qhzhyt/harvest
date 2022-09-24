@@ -1,21 +1,23 @@
 {{- define "variables.go" -}}
 package harvest
 
-import(
-    {{- range .ImportList}}
-        {{.Alias}} "{{.Package}}"
-    {{- end}}
+import (
+    "reflect"
 )
 
-var(
-    {{- range .InstanceList}}
-        {{.InstanceName}} = {{.PackageAlias}}.{{.TypeName}}{}
-    {{- end}}
+{{ template "imports" . }}
+
+import (
+    "github.com/qhzhyt/harvest/pkg/annotation"
+    "github.com/qhzhyt/harvest/pkg/harvest/types"
 )
 
-var(
-    {{- range .InstanceList}}
-        {{.InstancePtrName}} = &{{.InstanceName}}
-    {{- end}}
-)
+var Variables = []*types.Variable {
+{{- range .VariableList }}
+    {
+{{ include "target" .Target | indent 8 }}
+        PtrValue:   reflect.ValueOf(&{{.PackageAlias}}.{{.Name}}).Elem(),
+    },
+{{- end}}
+}
 {{end}}
