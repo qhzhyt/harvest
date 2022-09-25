@@ -1,4 +1,4 @@
-module simple
+module github.com/qhzhyt/harvest/examples/simple
 
 go 1.18
 

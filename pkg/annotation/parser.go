@@ -32,6 +32,7 @@ func Parse(text string) []*Annotation {
 			} else {
 				lastAnnotation.Name = a[1:]
 			}
+			lastAnnotation.Name = strings.ToLower(lastAnnotation.Name)
 		} else {
 			if lastAnnotation == nil {
 				continue

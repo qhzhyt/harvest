@@ -1,147 +1,146 @@
 package annotation
 
 import (
-    "fmt"
-    "go/ast"
-    "go/parser"
-    "go/token"
-    "os"
-    "path"
-    "path/filepath"
+	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
+	"os"
+	"path"
+	"path/filepath"
 )
 
-func ScanLocalPackage(modulePath string, pkg string, deepScan bool) (map[string][]*Annotation, error) {
+func ScanLocalPackage(localPath string, modulePath string, pkg string, deepScan bool) (map[string][]*Target, error) {
 
-    result := map[string][]*Annotation{}
+	result := map[string][]*Target{}
 
-    var curAnnotations []*Annotation
+	//var curAnnotations []*Annotation
 
-    pkgPath, err := filepath.Abs(path.Join(modulePath, pkg))
+	var targets []*Target
 
-    if err != nil {
-        fmt.Println(err)
-        return nil, err
-    }
+	pkgPath, err := filepath.Abs(path.Join(localPath, pkg))
 
-    fset := token.NewFileSet()
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
 
-    fs, err := parser.ParseDir(fset, pkgPath, nil, parser.ParseComments|parser.AllErrors)
+	fset := token.NewFileSet()
 
-    if err != nil {
-        fmt.Println(err)
-        return nil, err
-    }
+	fs, err := parser.ParseDir(fset, pkgPath, nil, parser.ParseComments|parser.AllErrors)
 
-    //ast.Print(fset, fs)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
 
-    for pn, f := range fs {
+	//ast.Print(fset, fs)
 
-        for fn, file := range f.Files {
-            for _, decl := range file.Decls {
+	for _, f := range fs {
 
-                switch d := decl.(type) {
-                case *ast.FuncDecl:
-                    target := &Target{
-                        Module:      modulePath,
-                        Package:     pkg,
-                        Type:        TargetTypeFunc,
-                        Name:        d.Name.Name,
-                        FuncRecv:    "",
-                        Annotations: nil,
-                    }
-                    if d.Recv != nil {
+		for fn, file := range f.Files {
+			for _, decl := range file.Decls {
 
-                        switch rt := d.Recv.List[0].Type.(type) {
-                        case *ast.StarExpr:
-                            target.FuncRecv = "*" + rt.X.(*ast.Ident).Name
-                        case *ast.Ident:
-                            target.FuncRecv = rt.Name
-                        }
-                        //fmt.Println(a.FuncRecv, a.Name)
-                    }
-                    for _, a := range Parse(d.Doc.Text()) {
-                        a.File = fn
-                        a.Package = pn
-                        a.Target.Type = TargetTypeFunc
-                        a.Target.Name = d.Name.Name
-                        a.Target.Module = modulePath
-                        a.Target.Package = pkg
+				switch d := decl.(type) {
+				case *ast.FuncDecl:
+					target := &Target{
+						File:        fn,
+						Module:      modulePath,
+						Package:     pkg,
+						Type:        TargetTypeFunc,
+						Name:        d.Name.Name,
+						FuncRecv:    "",
+						Annotations: nil,
+					}
 
-                        curAnnotations = append(curAnnotations, a)
-                    }
-                case *ast.GenDecl:
-                    annotations := Parse(d.Doc.Text())
-                    for _, spec := range d.Specs {
-                        for _, annotation := range annotations {
+					if d.Recv != nil {
 
-                            annotation.File = fn
-                            annotation.Package = pn
-                            annotation.Target.Module = modulePath
-                            annotation.Target.Package = pkg
+						switch rt := d.Recv.List[0].Type.(type) {
+						case *ast.StarExpr:
+							target.FuncRecv = "*" + rt.X.(*ast.Ident).Name
+						case *ast.Ident:
+							target.FuncRecv = rt.Name
+						}
+						//fmt.Println(a.FuncRecv, a.Name)
+					}
+					target.Annotations = Parse(d.Doc.Text())
 
-                            switch s := spec.(type) {
+					targets = append(targets, target)
 
-                            case *ast.TypeSpec:
+				case *ast.GenDecl:
+					annotations := Parse(d.Doc.Text())
 
-                                annotation.Target.Name = s.Name.Name
+					for _, spec := range d.Specs {
 
-                                switch s.Type.(type) {
-                                case *ast.StructType:
-                                    annotation.Target.Type = TargetTypeStruct
-                                case *ast.InterfaceType:
-                                    annotation.Target.Type = TargetTypeInterface
-                                //case *ast.FuncType:
-                                //case *ast.:
-                                default:
+						target := &Target{
+							File:        fn,
+							Module:      modulePath,
+							Package:     pkg,
+							Annotations: annotations,
+						}
 
-                                    fmt.Println("TypeSpec: ", s.Type)
-                                    continue
+						switch s := spec.(type) {
 
-                                }
+						case *ast.TypeSpec:
 
-                            case *ast.ValueSpec:
-                                annotation.Target.Name = s.Names[0].Name
-                                annotation.Target.Type = TargetTypeVar
-                                annotation.Target.Module = modulePath
-                                annotation.Target.Package = pkg
-                            default:
-                                fmt.Println("Spec: ", s)
-                            }
+							target.Name = s.Name.Name
 
-                            curAnnotations = append(curAnnotations, annotation)
+							switch s.Type.(type) {
+							case *ast.StructType:
+								target.Type = TargetTypeStruct
+							case *ast.InterfaceType:
+								target.Type = TargetTypeInterface
+							//case *ast.FuncType:
+							//case *ast.:
+							default:
+								fmt.Println("TypeSpec: ", s.Type)
+								continue
+							}
 
-                        }
-                    }
-                default:
-                    fmt.Println("Decl: ", d)
-                }
-            }
+						case *ast.ValueSpec:
+							target.Name = s.Names[0].Name
+							target.Type = TargetTypeVar
+						default:
+							fmt.Println("Spec: ", s)
+						}
 
-        }
+						targets = append(targets, target)
+					}
+				default:
+					fmt.Println("Decl: ", d)
+				}
+			}
+		}
+	}
 
-    }
+	if deepScan {
+		entries, err := os.ReadDir(pkgPath)
+		if err != nil {
+			return nil, err
+		}
 
-    if deepScan {
-        entries, err := os.ReadDir(pkgPath)
-        if err != nil {
-            return nil, err
-        }
+		for _, entry := range entries {
+			if entry.IsDir() {
+				annotations, err := ScanLocalPackage(localPath, modulePath, path.Join(pkg, entry.Name()), true)
+				if err != nil {
+					return nil, err
+				}
 
-        for _, entry := range entries {
-            if entry.IsDir() {
-                annotations, err := ScanLocalPackage(modulePath, path.Join(pkg, entry.Name()), true)
-                if err != nil {
-                    return nil, err
-                }
+				for pkg0, ans := range annotations {
+					result[pkg0] = ans
+				}
+			}
+		}
+	}
 
-                for pkg0, ans := range annotations {
-                    result[pkg0] = ans
-                }
-            }
-        }
-    }
+	for _, target := range targets {
+		target.ID = GenTargetID(target)
+		for _, annotation := range target.Annotations {
+			annotation.Target = target.ID
+		}
+	}
 
-    result[pkgPath] = curAnnotations
+	result[pkgPath] = targets
 
-    return result, nil
+	return result, nil
 }
