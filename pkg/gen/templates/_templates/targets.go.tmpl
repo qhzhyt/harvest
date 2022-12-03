@@ -1,0 +1,57 @@
+{{- define "targets.go" -}}
+package harvest
+
+import "github.com/qhzhyt/harvest/pkg/annotation"
+
+var Targets = []*annotation.Target {
+{{- range .Targets }}
+    {
+        ID:             "{{.ID}}",
+        File:           "{{.File}}",
+        Module:         "{{.Module}}",
+        Package:        "{{.Package}}",
+        Type:           "{{.Type}}",
+        Name:           "{{.Name}}",
+        Super:          "{{.Super}}",
+        SuperName:      "{{.SuperName}}",
+        ValueType:      "{{.ValueType}}",
+        Methods:        map[annotation.Name]annotation.TargetID {
+        {{- range $name, $value := .Methods }}
+            "{{$name}}": "{{$value}}",
+        {{- end }}
+        },
+        Fields:         map[annotation.Name]annotation.TargetID {
+        {{- range $name, $value := .Fields }}
+            "{{$name}}": "{{$value}}",
+        {{- end }}
+        },
+        FuncRecv:       "{{.FuncRecv}}",
+        FuncParams:     annotation.TargetIDList {
+        {{- range .FuncParams }}
+            "{{.}}",
+        {{- end }}
+        },
+        FuncReturns:    annotation.TargetIDList {
+        {{- range .FuncReturns }}
+            "{{.}}",
+        {{- end }}
+        },
+        Star:           {{.Star}},
+        Annotations:    annotation.Annotations{
+        {{- range .Annotations }}
+            {
+                ID:      "{{.ID}}",
+                Name:    "{{.Name}}",
+                Args:    map[string]string {
+                {{- range $k, $v := .Args}}
+                    "{{$k}}": "{{$v}}",
+                {{- end}}
+                },
+                Target:  "{{.Target}}",
+            },
+        {{- end}}
+        },
+    },
+{{- end }}
+}
+{{end}}

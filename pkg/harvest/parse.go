@@ -36,7 +36,7 @@ func ParseMain(mainFilePath string) (*types.Harvest, error) {
         if ok && funcDecl.Name.Name == "main" {
             for _, a := range annotation.Parse(funcDecl.Doc.Text()) {
                 fmt.Println(a.Name, a.Args)
-                if strings.ToLower(a.Name) == "harvest" {
+                if strings.ToLower(string(a.Name)) == "harvest" {
                     result := &types.Harvest{}
                     err = annotation.Unmarshal(a, result)
                     if err != nil {
