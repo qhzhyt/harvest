@@ -5,7 +5,7 @@ import (
 )
 
 type Component struct {
-    annotation.Target
+    Target     annotation.TargetID
     Instance   interface{}
     Annotation *annotation.Annotation
 }
